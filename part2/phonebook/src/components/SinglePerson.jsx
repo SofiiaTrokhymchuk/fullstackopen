@@ -1,9 +1,12 @@
-function SinglePerson({ person }) {
-  const { name, number } = person;
+function SinglePerson({ person, deletePerson }) {
+  const { id, name, number } = person;
   return (
-    <p>
-      {name} {number}
-    </p>
+    <div>
+      <span>
+        {name} {number}{' '}
+      </span>
+      <button onClick={() => deletePerson(id)}>delete</button>
+    </div>
   );
 }
 

@@ -1,57 +1,123 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Filter from './components/Filter';
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
+import Notification from './components/Notification';
+import personsService from './services/persons';
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-123456', id: 1 },
-    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
-    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
-    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 },
-  ]);
-  const [personsShown, setPersonsShown] = useState(persons);
+  const [persons, setPersons] = useState(null);
   const [newName, setNewName] = useState('');
   const [newNumber, setNewNumber] = useState('');
   const [filter, setFilter] = useState('');
+  const [message, setMessage] = useState(null);
+  const [status, setStatus] = useState('');
 
-  const handleNewNameChange = (e) => {
-    setNewName(e.target.value);
+  const fetchPersons = () => {
+    personsService.getAll().then((persons) => setPersons(persons));
   };
 
-  const handleNewNumberChange = (e) => {
-    setNewNumber(e.target.value);
+  useEffect(fetchPersons, []);
+
+  const delayNotification = () => {
+    setTimeout(() => {
+      setMessage(null);
+      setStatus('');
+    }, 5000);
   };
 
-  const handleFilterChange = (e) => {
-    const newFilter = e.target.value.toLowerCase();
-    setFilter(newFilter);
-    setPersonsShown(
-      [...persons].filter((p) => p.name.toLowerCase().includes(newFilter))
-    );
+  const handleNewNameChange = (e) => setNewName(e.target.value);
+
+  const handleNewNumberChange = (e) => setNewNumber(e.target.value);
+
+  const handleFilterChange = (e) => setFilter(e.target.value);
+
+  const updatePerson = (person) => {
+    personsService
+      .update(person.id, {
+        ...person,
+        number: newNumber,
+      })
+      .then((newPerson) =>
+        setPersons(persons.map((p) => (p.id === person.id ? newPerson : p)))
+      )
+      .then(() => {
+        setMessage(`${person.name} was successfully updated!`);
+        setStatus('success');
+        delayNotification();
+      })
+      .catch((e) => {
+        setMessage(`Opps, something went wrong...\n ${e.message}`);
+        setStatus('error');
+        delayNotification();
+      });
   };
 
   const addNewName = (e) => {
     e.preventDefault();
-    for (const p of persons) {
-      if (p.name === newName) {
-        return alert(`${newName} is already added to phonebook`);
-      }
+    const personExists = persons.find((p) => p.name === newName);
+
+    if (personExists) {
+      const isPersonUpdated = window.confirm(
+        `${personExists.name} is already added to phonebook, replace the old number with a new one?`
+      );
+      if (!isPersonUpdated) return;
+      updatePerson(personExists);
+      return;
     }
-    const newPersons = persons.concat({
+
+    const newPerson = {
       name: newName,
       number: newNumber,
-      id: persons.length + 1,
-    });
-    setPersons(newPersons);
-    setPersonsShown(newPersons);
-    setNewName('');
-    setNewNumber('');
+    };
+
+    personsService
+      .create(newPerson)
+      .then((person) => {
+        setPersons(persons.concat(person));
+        setNewName('');
+        setNewNumber('');
+      })
+      .then(() => {
+        setMessage(`${newPerson.name} was successfully added!`);
+        setStatus('success');
+        delayNotification();
+      })
+      .catch((e) => {
+        setMessage(`Opps, something went wrong...\n ${e.message}`);
+        setStatus('error');
+        delayNotification();
+      });
   };
+
+  const deletePerson = (id) => {
+    const deletedPerson = persons.find((p) => p.id === id);
+    if (window.confirm(`Delete ${deletedPerson.name}?`)) {
+      personsService
+        .remove(id)
+        .then(() => setPersons(persons.filter((p) => p.id !== id)))
+        .then(() => {
+          setMessage(`${deletedPerson.name} was successfully deleted!`);
+          setStatus('success');
+          delayNotification();
+        })
+        .catch((e) => {
+          setMessage(`Opps, something went wrong...\n ${e.message}`);
+          setStatus('error');
+          delayNotification();
+        });
+    }
+  };
+
+  if (!persons) return;
 
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification
+        message={message}
+        status={status}
+      />
       <Filter
         filter={filter}
         handleFilterChange={handleFilterChange}
@@ -65,7 +131,12 @@ const App = () => {
         handleNewNumberChange={handleNewNumberChange}
       />
       <h3>Numbers</h3>
-      <Persons persons={personsShown} />
+      <Persons
+        persons={persons.filter((p) =>
+          p.name.toLowerCase().includes(filter.toLowerCase())
+        )}
+        deletePerson={deletePerson}
+      />
     </div>
   );
 };
