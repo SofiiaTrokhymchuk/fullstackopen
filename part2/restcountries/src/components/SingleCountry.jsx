@@ -10,9 +10,11 @@ function SingleCountry({ country }) {
         `https://api.openweathermap.org/data/2.5/weather?q=${country?.capital}&appid=${api_key}&units=metric`
       )
       .then((res) => {
+        console.log(res.data);
         setWeather({
           temp: res.data.main.temp,
           wind: res.data.wind.speed,
+          icon: `https://openweathermap.org/img/wn/${res.data.weather[0].icon}@2x.png`,
         });
       });
   };
@@ -40,6 +42,11 @@ function SingleCountry({ country }) {
       />
       <h2>Weather in {country.capital}</h2>
       <p>temperature {weather?.temp} Celcius </p>
+      <img
+        src={weather?.icon}
+        alt='weather'
+        height={100}
+      />
       <p>wind {weather?.wind}m/s</p>
     </div>
   );
