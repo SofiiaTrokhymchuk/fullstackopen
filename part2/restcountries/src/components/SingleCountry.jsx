@@ -7,7 +7,7 @@ function SingleCountry({ country }) {
   const fetchWeather = () => {
     axios
       .get(
-        `https://api.openweathermap.org/data/2.5/weather?q=${country?.capital}&appid=${api_key}&units=metric`
+        `https://api.openweathermap.org/data/2.5/weather?q=${country.capital}&appid=${api_key}&units=metric`
       )
       .then((res) => {
         console.log(res.data);
@@ -21,7 +21,7 @@ function SingleCountry({ country }) {
 
   useEffect(fetchWeather, []);
 
-  if (!country) return;
+  if (!weather) return;
 
   return (
     <div>
@@ -41,13 +41,13 @@ function SingleCountry({ country }) {
         height={150}
       />
       <h2>Weather in {country.capital}</h2>
-      <p>temperature {weather?.temp} Celcius </p>
+      <p>temperature {weather.temp} Celcius </p>
       <img
-        src={weather?.icon}
+        src={weather.icon}
         alt='weather'
         height={100}
       />
-      <p>wind {weather?.wind}m/s</p>
+      <p>wind {weather.wind}m/s</p>
     </div>
   );
 }

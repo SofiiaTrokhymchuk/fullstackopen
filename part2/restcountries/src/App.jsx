@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import SingleCountry from './components/SingleCountry';
-import Message from './components/Message';
 import Countries from './components/Countries';
 
 function App() {
   const [country, setCountry] = useState('');
   const [countries, setCountries] = useState(null);
-  const [showCountries, setShowCountries] = useState(false);
   const filteredCountries =
     country === ''
       ? countries
@@ -40,20 +37,10 @@ function App() {
           onChange={handleCountryChange}
         />
       </form>
-
-      <Message
-        country={country}
+      <Countries
         countries={filteredCountries}
-        setShowCountries={setShowCountries}
+        country={country}
       />
-      <>
-        {showCountries &&
-          (filteredCountries.length > 1 ? (
-            <Countries countries={filteredCountries} />
-          ) : (
-            <SingleCountry country={filteredCountries[0]} />
-          ))}
-      </>
     </div>
   );
 }
