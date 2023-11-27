@@ -38,9 +38,11 @@ const App = () => {
         ...person,
         number: newNumber,
       })
-      .then((newPerson) =>
-        setPersons(persons.map((p) => (p.id === person.id ? newPerson : p)))
-      )
+      .then((newPerson) => {
+        setPersons(persons.map((p) => (p.id === person.id ? newPerson : p)));
+        setNewName('');
+        setNewNumber('');
+      })
       .then(() => {
         setMessage(`${person.name} was successfully updated!`);
         setStatus('success');
