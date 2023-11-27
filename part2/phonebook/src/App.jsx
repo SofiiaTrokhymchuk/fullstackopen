@@ -47,7 +47,7 @@ const App = () => {
         delayNotification();
       })
       .catch((e) => {
-        setMessage(`Opps, something went wrong...\n ${e.message}`);
+        setMessage(`Opps, something went wrong...\n ${e.response.data.error}`);
         setStatus('error');
         delayNotification();
       });
@@ -84,7 +84,7 @@ const App = () => {
         delayNotification();
       })
       .catch((e) => {
-        setMessage(`Opps, something went wrong...\n ${e.message}`);
+        setMessage(`Opps, something went wrong...\n ${e.response.data.error}`);
         setStatus('error');
         delayNotification();
       });
@@ -102,7 +102,9 @@ const App = () => {
           delayNotification();
         })
         .catch((e) => {
-          setMessage(`Opps, something went wrong...\n ${e.message}`);
+          setMessage(
+            `Opps, something went wrong...\n ${e.response.data.error}`
+          );
           setStatus('error');
           delayNotification();
         });
