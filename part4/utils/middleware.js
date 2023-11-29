@@ -16,13 +16,13 @@ const errorHandler = (error, request, response, next) => {
   logger.error(error.message);
 
   const errors = {
-    CastError: { status: 400, message: 'Malformatted ID' },
+    CastError: { status: 400, error: 'Malformatted ID' },
     ValidationError: { status: 400, error: error.message },
-    ServerError: { status: 500, message: 'Internal Server Error' },
+    ServerError: { status: 500, error: 'Internal Server Error' },
   };
 
   const customError = errors[error.name] || errors['ServerError'];
-  response.status(customError.status).json(customError.message);
+  response.status(customError.status).json({ error: customError.error });
 
   next(error);
 };
