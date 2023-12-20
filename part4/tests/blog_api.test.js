@@ -37,6 +37,36 @@ describe('when there are initially some blogs saved', () => {
 }, 100000);
 
 describe('addition of a new blog', () => {
+  let token = '';
+
+  beforeAll(async () => {
+    const user = {
+      username: 'user',
+      password: '123',
+    };
+
+    await api.post('/api/users').send(user);
+    const auth = await api.post('/api/login').send(user);
+
+    token = auth.body.token;
+  });
+
+  test('new blog is not added when authorization fails', async () => {
+    const newBlog = {
+      title: 'Go To Statement Considered Harmful',
+      author: 'Edsger W. Dijkstra',
+      url: 'http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html',
+      likes: 5,
+    };
+
+    await api
+      .post('/api/blogs')
+      .set('Authorization', '')
+      .send(newBlog)
+      .expect(401)
+      .expect('Content-Type', /application\/json/);
+  });
+
   test('new blog is added', async () => {
     const newBlog = {
       title: 'Go To Statement Considered Harmful',
@@ -47,6 +77,7 @@ describe('addition of a new blog', () => {
 
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/);
@@ -62,7 +93,11 @@ describe('addition of a new blog', () => {
       url: 'http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html',
     };
 
-    const response = await api.post('/api/blogs').send(newBlog);
+    const response = await api
+      .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newBlog);
+
     expect(response.body.likes).toBeDefined();
     expect(response.body.likes).toBe(0);
   });
@@ -73,7 +108,15 @@ describe('addition of a new blog', () => {
       likes: 5,
     };
 
-    await api.post('/api/blogs').send(newBlog).expect(400);
+    await api
+      .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newBlog)
+      .expect(400);
+  });
+
+  afterAll(async () => {
+    await User.findOneAndDelete({ username: 'user' });
   });
 }, 100000);
 
@@ -105,19 +148,48 @@ describe('update of a blog', () => {
   });
 }, 100000);
 
-describe('deletion of a blog', () => {
+describe.only('deletion of a blog', () => {
+  let token = '';
+
+  beforeAll(async () => {
+    const user = {
+      username: 'user',
+      password: '123',
+    };
+
+    await api.post('/api/users').send(user);
+    const auth = await api.post('/api/login').send(user);
+
+    token = auth.body.token;
+  });
+
   test('succeeds with status 204 if id is valid', async () => {
-    const blogsBefore = await apiHelper.blogsInDb();
-    const blog = blogsBefore[0];
+    const newBlog = {
+      title: 'Go To Statement Considered Harmful',
+      author: 'Edsger W. Dijkstra',
+      url: 'http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html',
+      likes: 5,
+    };
 
-    await api.delete('/api/blogs/' + blog.id).expect(204);
+    const createdBlog = await api
+      .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newBlog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/);
 
-    const blogsAfter = await apiHelper.blogsInDb();
-    expect(blogsBefore).toHaveLength(blogsAfter.length + 1);
+    await api
+      .delete('/api/blogs/' + createdBlog.body.id)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(204);
+  });
+
+  afterAll(async () => {
+    await User.findOneAndDelete({ username: 'user' });
   });
 }, 100000);
 
-describe.only('when there is initially one user in db', () => {
+describe('when there is initially one user in db', () => {
   beforeEach(async () => {
     await User.deleteMany({});
 

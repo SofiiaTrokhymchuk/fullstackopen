@@ -1,6 +1,7 @@
 const blogsRouter = require('express').Router();
 const Blog = require('../models/blogs');
 const User = require('../models/user');
+const { getToken, getUser } = require('../utils/middleware');
 
 blogsRouter.get('/', async (request, response, next) => {
   try {
@@ -15,7 +16,7 @@ blogsRouter.get('/', async (request, response, next) => {
   }
 });
 
-blogsRouter.post('/', async (request, response, next) => {
+blogsRouter.post('/', getToken, getUser, async (request, response, next) => {
   try {
     const user = await User.findById(request.userId);
     const blog = new Blog({ ...request.body, user: user._id });
@@ -43,20 +44,25 @@ blogsRouter.put('/:id', async (request, response, next) => {
   }
 });
 
-blogsRouter.delete('/:id', async (request, response, next) => {
-  const { id } = request.params;
-  try {
-    const blog = await Blog.findById(id);
-    if (!(blog.user.toString() === request.userId.toString())) {
-      return response.status(403).json({ error: 'Access denied' });
+blogsRouter.delete(
+  '/:id',
+  getToken,
+  getUser,
+  async (request, response, next) => {
+    const { id } = request.params;
+    try {
+      const blog = await Blog.findById(id);
+      if (!(blog.user.toString() === request.userId.toString())) {
+        return response.status(403).json({ error: 'Access denied' });
+      }
+
+      await Blog.findByIdAndDelete(id);
+
+      response.status(204).end();
+    } catch (error) {
+      next(error);
     }
-
-    await Blog.findByIdAndDelete(id);
-
-    response.status(204).end();
-  } catch (error) {
-    next(error);
   }
-});
+);
 
 module.exports = blogsRouter;

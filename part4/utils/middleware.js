@@ -34,6 +34,8 @@ const getToken = (request, response, next) => {
   const auth = request.get('authorization');
   if (auth && auth.startsWith('Bearer')) {
     request.token = auth.split(' ')[1];
+  } else {
+    return response.status(401).json({ error: 'Invalid token' });
   }
 
   next();
