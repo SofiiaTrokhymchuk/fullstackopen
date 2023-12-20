@@ -19,6 +19,8 @@ const errorHandler = (error, request, response, next) => {
     CastError: { status: 400, error: 'Malformatted ID' },
     ValidationError: { status: 400, error: error.message },
     ServerError: { status: 500, error: 'Internal Server Error' },
+    JsonWebTokenError: { status: 401, error: 'Invalid token' },
+    TokenExpiredError: { status: 401, error: 'Token expired' },
   };
 
   const customError = errors[error.name] || errors['ServerError'];
@@ -27,8 +29,18 @@ const errorHandler = (error, request, response, next) => {
   next(error);
 };
 
+const getToken = (request, response, next) => {
+  const auth = request.get('authorization');
+  if (auth && auth.startsWith('Bearer')) {
+    request.token = auth.split(' ')[1];
+  }
+
+  next();
+};
+
 module.exports = {
   requestLogger,
   unknownEndpoint,
   errorHandler,
+  getToken,
 };
