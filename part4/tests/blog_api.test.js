@@ -3,6 +3,8 @@ const supertest = require('supertest');
 const app = require('../app');
 const Blog = require('../models/blogs');
 const apiHelper = require('./api_helper');
+const bcrypt = require('bcrypt');
+const User = require('../models/user');
 
 const api = supertest(app);
 
@@ -114,5 +116,103 @@ describe('deletion of a blog', () => {
     expect(blogsBefore).toHaveLength(blogsAfter.length + 1);
   });
 }, 100000);
+
+describe.only('when there is initially one user in db', () => {
+  beforeEach(async () => {
+    await User.deleteMany({});
+
+    const passwordHash = await bcrypt.hash('sekret', 10);
+    const user = new User({ username: 'root', passwordHash });
+
+    await user.save();
+  });
+
+  test('creation succeeds with a fresh username', async () => {
+    const usersAtStart = await apiHelper.usersInDb();
+
+    const newUser = {
+      username: 'mluukkai',
+      name: 'Matti Luukkainen',
+      password: 'salainen',
+    };
+
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(201)
+      .expect('Content-Type', /application\/json/);
+
+    const usersAtEnd = await apiHelper.usersInDb();
+    expect(usersAtEnd).toHaveLength(usersAtStart.length + 1);
+
+    const usernames = usersAtEnd.map((u) => u.username);
+    expect(usernames).toContain(newUser.username);
+  });
+
+  test('creation fails with proper statuscode and message if username already taken', async () => {
+    const usersAtStart = await apiHelper.usersInDb();
+
+    const newUser = {
+      username: 'root',
+      name: 'Superuser',
+      password: 'salainen',
+    };
+
+    const result = await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(400)
+      .expect('Content-Type', /application\/json/);
+
+    expect(result.body.error).toContain('expected `username` to be unique');
+
+    const usersAtEnd = await apiHelper.usersInDb();
+    expect(usersAtEnd).toEqual(usersAtStart);
+  });
+
+  test('creation fails with proper statuscode and message if password validation fails', async () => {
+    const usersAtStart = await apiHelper.usersInDb();
+    const newUser = {
+      username: 'user',
+      name: 'Superuser',
+      password: '01',
+    };
+
+    const result = await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(400)
+      .expect('Content-Type', /application\/json/);
+
+    expect(result.body.error).toContain(
+      'Password must be at least 3 characters long'
+    );
+
+    const usersAtEnd = await apiHelper.usersInDb();
+    expect(usersAtEnd).toEqual(usersAtStart);
+  });
+
+  test('creation fails with proper statuscode and message if username validation fails', async () => {
+    const usersAtStart = await apiHelper.usersInDb();
+    const newUser = {
+      username: 'u',
+      name: 'Superuser',
+      password: '013456789',
+    };
+
+    const result = await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(400)
+      .expect('Content-Type', /application\/json/);
+
+    expect(result.body.error).toContain(
+      'Username must be at least 3 characters long'
+    );
+
+    const usersAtEnd = await apiHelper.usersInDb();
+    expect(usersAtEnd).toEqual(usersAtStart);
+  });
+});
 
 afterAll(async () => await db.disconnect());

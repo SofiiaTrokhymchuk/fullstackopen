@@ -1,9 +1,14 @@
 const blogsRouter = require('express').Router();
 const Blog = require('../models/blogs');
+const User = require('../models/user');
 
 blogsRouter.get('/', async (request, response, next) => {
   try {
-    const blogs = await Blog.find({});
+    const blogs = await Blog.find({}).populate('user', {
+      username: 1,
+      name: 1,
+      id: 1,
+    });
     response.json(blogs);
   } catch (error) {
     next(error);
@@ -11,10 +16,15 @@ blogsRouter.get('/', async (request, response, next) => {
 });
 
 blogsRouter.post('/', async (request, response, next) => {
-  const blog = new Blog(request.body);
-
   try {
+    const user = await User.findById(request.userId);
+    const blog = new Blog({ ...request.body, user: user._id });
+
+    user.blogs = user.blogs.concat(blog._id);
+    await user.save();
+
     const result = await blog.save();
+
     response.status(201).json(result);
   } catch (error) {
     next(error);
@@ -36,7 +46,13 @@ blogsRouter.put('/:id', async (request, response, next) => {
 blogsRouter.delete('/:id', async (request, response, next) => {
   const { id } = request.params;
   try {
+    const blog = await Blog.findById(id);
+    if (!(blog.user.toString() === request.userId.toString())) {
+      return response.status(403).json({ error: 'Access denied' });
+    }
+
     await Blog.findByIdAndDelete(id);
+
     response.status(204).end();
   } catch (error) {
     next(error);
