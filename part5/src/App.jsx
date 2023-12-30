@@ -16,6 +16,7 @@ const App = () => {
   const [url, setUrl] = useState('');
 
   const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -34,14 +35,16 @@ const App = () => {
   }, []);
 
   const showMessage = (error, message) => {
+    let notificationMessage;
     if (error) {
-      console.log(error.message);
-      const message = error.response.data.error || error.message;
-      setMessage(message);
+      notificationMessage = error.response.data.error || error.message;
+      setIsError(true);
     } else {
-      setMessage(message);
+      notificationMessage = message;
+      setIsError(false);
     }
 
+    setMessage(notificationMessage);
     setTimeout(() => {
       setMessage('');
     }, 5000);
@@ -138,7 +141,10 @@ const App = () => {
 
   return (
     <div>
-      <Notification message={message} />
+      <Notification
+        message={message}
+        isError={isError}
+      />
       {!user && (
         <div>
           <h1>log in to application</h1>
